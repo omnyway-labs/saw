@@ -1,0 +1,90 @@
+
+A Clojure library for AWS auth Providers
+
+ - Takes static, env, profile and default *provider map* and returns the
+   credentials that can be used in any service clientBuilder
+ - Supports MFA optionally
+
+* Installation
+
+#+BEGIN_SRC clojure
+{:deps
+ {omnyway-labs/saw
+  {:git/url "git@github.com:omnyway-labs/saw.git",
+   :sha "6ee862fa51fde9f5840687352b07900b4fb4afd3"}}
+
+(require '[saw.core :as saw])
+#+END_SRC
+
+* Login and Providers
+
+** Static Provider
+
+#+BEGIN_SRC clojure
+(saw/login {:provider :static
+            :access-key "xxx"
+            :secret-key "xxx"})
+#+END_SRC
+
+** Default Provider
+
+#+BEGIN_SRC clojure
+(saw/login {:provider :default
+            :region   "us-east-1"}
+#+END_SRC
+
+** Profile Provider
+
+#+BEGIN_SRC clojure
+(saw/login {:provider :profile
+            :profile (System/getenv "AWS_PROFILE")}
+#+END_SRC
+
+* Using the Credentials in Client Builders
+
+#+BEGIN_SRC clojure
+(import '[com.amazonaws.services.s3 AmazonS3ClientBuilder])
+
+(let [client (-> (AmazonS3ClientBuilder/standard)
+                 (.withCredentials (saw/creds))
+                 (.withRegion region)
+                 .build)]
+  (.method client args))
+
+#+END_SRC
+
+* Session with MFA
+
+Set the following Environment variables
+
+#+BEGIN_SRC sh
+export AWS_ASSUME_ROLE_ARN="arn:aws:iam::ACCOUNT-ID:role/ROLE-NAME"
+export AWS_MFA_ARN="arn:aws:iam::ACCOUNT-ID:mfa/<username>"
+#+END_SRC
+
+#+BEGIN_SRC clojure
+(saw/login {:provider :profile
+            :profile (System/getenv "AWS_PROFILE")}
+           mfa-code)
+=> {:provider :static
+    :access-key "xx"
+    :secret-key "xx"
+    :session-token "token"
+    :expiration #inst "xxx"}
+#+END_SRC
+
+The above returns static provider access keys with a session-token
+valid for the duration set for the Assume Role. It also persists the
+session in $HOME/.aws/session file
+
+#+BEGIN_SRC clojure
+
+;; to lookup session
+(saw/lookup-session)
+
+;; to validate the session
+(saw/validate-session "us-east-1")
+#+END_SRC
+
+The Session Timeout is configurable via the AWS_SESSION_TIMEOUT env
+variable (seconds).
