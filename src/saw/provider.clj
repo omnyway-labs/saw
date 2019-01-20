@@ -38,8 +38,8 @@
    :env      EnvironmentVariableCredentialsProvider
    :default  DefaultAWSCredentialsProviderChain})
 
-(defn resolve [{:keys [provider profile] :as config}]
-  (condp = provider
+(defn resolve [{:keys [provider auth-type profile] :as config}]
+  (condp = (or provider auth-type)
     :instance (InstanceProfileCredentialsProvider. false)
     :profile  (ProfileCredentialsProvider. (name profile))
     :env      (EnvironmentVariableCredentialsProvider.)
