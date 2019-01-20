@@ -36,9 +36,7 @@
   `(try
     ~@body
     (catch Exception e#
-      (or (ex-data e#)
-          {:error-id :unidentified
-           :msg (.getMessage e#)}))))
+      (as-error (.getMessage e#)))))
 
 (defn omethods [obj]
   (map #(.getName %) (-> obj class .getMethods)))

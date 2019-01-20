@@ -2,7 +2,8 @@
   (:refer-clojure :exclude [find])
   (:require
    [clojure.java.io :as io]
-   [saw.util :refer [as-error] :as u])
+   [saw.util :refer [as-error error-as-value]
+    :as u])
   (:import
    [com.amazonaws.services.securitytoken
     AWSSecurityTokenService
@@ -64,24 +65,16 @@
          (cache!))))
 
 (defn create! [region mfa-code creds]
-  (try
-    (create* region mfa-code creds)
-    (catch AWSSecurityTokenServiceException e
-      (let [err (as-error (.getMessage e))]
-        err))
-    (catch Exception e
-      (let [err (as-error (.getMessage e))]
-        err))))
+  (error-as-value
+    (create* region mfa-code creds)))
 
 (defn validate! [region creds]
-  (try
+  (error-as-value
     (let [client (make-client region creds)]
       (->> (GetCallerIdentityRequest.)
            (.getCallerIdentity client)
            (.getArn))
-      creds)
-    (catch Exception e
-      (as-error (.getMessage e)))))
+      creds)))
 
 (defn clear! []
   (when (.exists (io/as-file session-file))
