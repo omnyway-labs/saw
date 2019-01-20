@@ -1,5 +1,5 @@
 
-A Clojure library for AWS auth Providers
+A Clojure library for AWS Auth Providers
 
  - Takes static, env, profile and default *provider map* and returns the
    credentials that can be used in any service clientBuilder
@@ -10,13 +10,13 @@ A Clojure library for AWS auth Providers
 #+BEGIN_SRC clojure
 {:deps
  {omnyway-labs/saw
-  {:git/url "git@github.com:omnyway-labs/saw.git",
-   :sha "6ee862fa51fde9f5840687352b07900b4fb4afd3"}}
+  {:git/url "https://github.com/omnyway-labs/saw.git",
+   :sha "bb019ccdb45c69ee2ca300e8b936e40e7991cb0d"}}
 
 (require '[saw.core :as saw])
 #+END_SRC
 
-* Login and Providers
+* Login without MFA
 
 ** Static Provider
 
@@ -53,7 +53,7 @@ A Clojure library for AWS auth Providers
 
 #+END_SRC
 
-* Session with MFA
+* Login with MFA
 
 Set the following Environment variables
 
@@ -75,7 +75,9 @@ export AWS_MFA_ARN="arn:aws:iam::ACCOUNT-ID:mfa/<username>"
 
 The above returns static provider access keys with a session-token
 valid for the duration set for the Assume Role. It also persists the
-session in $HOME/.aws/session file
+session in $HOME/.aws/session file.
+When a mfa-code is provided and the above required environment
+variables, a durable session is created.
 
 #+BEGIN_SRC clojure
 
