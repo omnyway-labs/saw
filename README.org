@@ -11,7 +11,7 @@ A Clojure library for AWS Auth Providers
 {:deps
  {omnyway-labs/saw
   {:git/url "https://github.com/omnyway-labs/saw.git",
-   :sha "bb019ccdb45c69ee2ca300e8b936e40e7991cb0d"}}
+   :sha "323751f347eee8f08897c169ce1d668463ddf49c"}}
 
 (require '[saw.core :as saw])
 #+END_SRC
