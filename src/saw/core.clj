@@ -29,7 +29,10 @@
         (if-not (:error-id creds)
           (provider/set! creds)
           creds))
-        session)))
+      session)))
+
+(defn clear-session []
+  (session/clear!))
 
 (defn login
   ([auth]
