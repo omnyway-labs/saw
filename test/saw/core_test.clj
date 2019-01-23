@@ -1,17 +1,25 @@
 (ns saw.core-test
   (:require
    [clojure.test :refer :all]
-   [saw.core :as saw]))
+   [saw.core :as saw])
+  (:import
+   [com.amazonaws.auth.profile
+    ProfileCredentialsProvider]))
 
-(deftest profile-provider-test
+(defn auth []
+  {:provider :profile
+   :profile  (System/getenv "AWS_PROFILE")})
+
+(deftest basic-test
+  (is (instance? ProfileCredentialsProvider
+                 (saw/creds (auth)))))
+
+(deftest ^:integration profile-provider-test
   (is (nil?
-         (-> (saw/login {:provider :profile
-                         :profile  (System/getenv "AWS_PROFILE")})
+         (-> (saw/login (auth))
              :error-id))))
 
-(deftest mfa-test
+(deftest ^:integration mfa-test
   (is (= :validation-error
-         (-> (saw/login {:provider :profile
-                         :profile  (System/getenv "AWS_PROFILE")}
-                        "12345")
+         (-> (saw/login (auth) "12345")
              :error-id))))
