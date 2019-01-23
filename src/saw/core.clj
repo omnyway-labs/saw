@@ -38,13 +38,9 @@
   ([auth]
    (-> (provider/resolve auth)
        (provider/set!)))
-  ([{:keys [region] :as auth} mfa-code & {:keys [force?]
-                                          :or {force? false}}]
+  ([{:keys [region] :as auth} mfa-code]
    (-> (provider/resolve auth)
        (provider/set!))
    (if (mfa-enabled?)
-     (do
-       (when force?
-         (clear-session))
-       (find-or-create-session region mfa-code))
+    (find-or-create-session region mfa-code)
     (creds))))
