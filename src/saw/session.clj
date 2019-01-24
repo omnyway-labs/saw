@@ -62,6 +62,7 @@
          (.assumeRole client)
          (.getCredentials)
          (as-static-creds)
+         (merge {:region region})
          (cache!))))
 
 (defn create! [region mfa-code creds]
