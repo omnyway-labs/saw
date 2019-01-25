@@ -41,6 +41,7 @@
   ([{:keys [region] :as auth} mfa-code]
    (-> (provider/resolve auth)
        (provider/set!))
-   (if (mfa-enabled?)
-    (find-or-create-session region mfa-code)
-    (creds))))
+   (if (session/mfable?)
+     (find-or-create-session region mfa-code)
+     {:error-id :env-not-configured
+      :msg      "AWS_ASSUME_ROLE_ARN or AWS_MFA_ARN not set"})))

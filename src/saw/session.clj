@@ -20,6 +20,10 @@
 (defn get-mfa-arn []
   (System/getenv "AWS_MFA_ARN"))
 
+(defn mfable? []
+  (and (get-role-arm)
+       (get-mfa-arn)))
+
 (def session-file (str (System/getenv "HOME") "/.aws/session"))
 
 (defn find []
