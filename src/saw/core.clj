@@ -34,9 +34,16 @@
 (defn clear-session []
   (session/clear!))
 
+(defn maybe-use-session [{:keys [session?] :as auth}]
+  (if (and session? (session/mfable?))
+    (if-let [session (session/find)]
+      (provider/resolve session)
+      (provider/resolve auth))
+    (provider/resolve auth)))
+
 (defn login
   ([auth]
-   (-> (provider/resolve auth)
+   (-> (maybe-use-session auth)
        (provider/set!)))
   ([{:keys [region] :as auth} mfa-code]
    (-> (provider/resolve auth)

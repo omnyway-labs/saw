@@ -17,7 +17,6 @@ A Clojure library for AWS Auth Providers
 #+END_SRC
 
 * Login without MFA
-
 ** Static Provider
 
 #+BEGIN_SRC clojure
@@ -38,6 +37,13 @@ A Clojure library for AWS Auth Providers
 #+BEGIN_SRC clojure
 (saw/login {:provider :profile
             :profile (System/getenv "AWS_PROFILE")}
+#+END_SRC
+
+** Environment Provider
+
+#+BEGIN_SRC clojure
+(saw/login {:provider :environment}
+;; reads the aws-access-key and aws-secret-key
 #+END_SRC
 
 * Using the Credentials in Client Builders
@@ -90,6 +96,19 @@ variables, a durable session is created.
 
 The Session Timeout is configurable via the AWS_SESSION_TIMEOUT env
 variable (seconds).
+
+
+Sometimes it is useful to just use the persisted session if MFA is
+enabled (the required ENV variables AWS_ASSUME_ROLE_ARN adn
+AWS_MFA_ARN are set).
+#+BEGIN_SRC clojure
+(saw/login {:provider :profile :profile :foo :session? true})
+#+END_SRC
+
+In the above, if =:session?= is true, then login tries to use the
+persisted session else falls back to the given provider. This is
+useful for testing locally but still use profiles where MFA is not
+enabled.
 
 * License - Apache 2.0
 

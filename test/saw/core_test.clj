@@ -3,6 +3,8 @@
    [clojure.test :refer :all]
    [saw.core :as saw])
   (:import
+   [com.amazonaws.auth
+    AWSStaticCredentialsProvider]
    [com.amazonaws.auth.profile
     ProfileCredentialsProvider]))
 
@@ -23,3 +25,14 @@
   (is (= :validation-error
          (-> (saw/login (auth) "12345")
              :error-id))))
+
+(deftest ^:integration use-session-test
+  (is (instance? AWSStaticCredentialsProvider
+                 (saw/login {:provider :profile
+                             :profile  :humans
+                             :session? true})))
+
+  (is (instance? ProfileCredentialsProvider
+                 (saw/login {:provider :profile
+                             :profile  :humans
+                             :session? false}))))
