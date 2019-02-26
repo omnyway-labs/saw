@@ -26,6 +26,15 @@
          (-> (saw/login (auth) "12345")
              :error-id))))
 
+(deftest ^:integration mfa-test-with-assume-role
+  (is (= :400
+         (-> (merge (auth)
+                    {:assume-role "my-assume-role"
+                     :session-name "foo"})
+             (saw/login "12345")
+             :error-id))))
+
+
 (deftest ^:integration use-session-test
   (is (instance? AWSStaticCredentialsProvider
                  (saw/login {:provider :profile
