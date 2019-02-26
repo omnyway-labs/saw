@@ -81,14 +81,14 @@ export AWS_MFA_ARN="arn:aws:iam::ACCOUNT-ID:mfa/<username>"
 
 The above returns static provider access keys with a session-token
 valid for the duration set for the Assume Role. It also persists the
-session in $HOME/.aws/session file.
+session in $HOME/.aws/session-saw file.
 When a mfa-code is provided and the above required environment
 variables, a durable session is created.
 
 #+BEGIN_SRC clojure
 
 ;; to lookup session
-(saw/lookup-session)
+(saw/session)
 
 ;; to validate the session
 (saw/validate-session "us-east-1")

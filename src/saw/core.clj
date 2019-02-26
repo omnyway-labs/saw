@@ -10,8 +10,10 @@
   ([] (provider/lookup))
   ([auth] (provider/resolve auth)))
 
-(defn session [session-name]
-  (session/find session-name))
+(defn session
+  ([] (session/find nil))
+  ([session-name]
+   (session/find session-name)))
 
 (defn validate-session
   ([region]
@@ -34,16 +36,18 @@
 (defn clear-session [session-name]
   (session/clear! session-name))
 
-(defn maybe-use-session [{:keys [session? session-name] :as auth}]
-  (if (and session? (session/mfable?))
+(defn mfable? [role]
+  (and (or role (session/get-role-arn))
+       (session/get-mfa-arn)))
+
+(defn maybe-use-session [{:keys [session? assume-role session-name]
+                          :as auth}]
+  (if (and session? (mfable? assume-role))
     (if-let [session (session/find session-name)]
       (provider/resolve session)
       (provider/resolve auth))
     (provider/resolve auth)))
 
-(defn mfable? [role]
-  (and (or role (session/get-role-arn))
-       (session/get-mfa-arn)))
 
 (defn login
   ([auth]
