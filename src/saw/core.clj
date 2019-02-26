@@ -10,8 +10,8 @@
   ([] (provider/lookup))
   ([auth] (provider/resolve auth)))
 
-(defn session []
-  (session/find))
+(defn session [session-name]
+  (session/find session-name))
 
 (defn validate-session
   ([region]
@@ -31,8 +31,8 @@
           creds))
       session)))
 
-(defn clear-session []
-  (session/clear!))
+(defn clear-session [session-name]
+  (session/clear! session-name))
 
 (defn maybe-use-session [{:keys [session? session-name] :as auth}]
   (if (and session? (session/mfable?))
