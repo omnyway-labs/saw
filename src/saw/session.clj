@@ -20,19 +20,19 @@
 (defn get-mfa-arn []
   (System/getenv "AWS_MFA_ARN"))
 
-(defn mfable? []
-  (and (get-role-arn)
-       (get-mfa-arn)))
+(defn session-file-name [session-name]
+  (if session-name
+    (str (System/getenv "HOME") "/.aws/session-" session-name)
+    (str (System/getenv "HOME") "/.aws/session")))
 
-(def session-file (str (System/getenv "HOME") "/.aws/session"))
+(defn find [name]
+  (let [f (session-file-name name)]
+    (when (.exists (io/as-file f))
+      (-> (slurp f)
+          (read-string)))))
 
-(defn find []
-  (when (.exists (io/as-file session-file))
-    (-> (slurp session-file)
-        (read-string))))
-
-(defn- cache! [session]
-  (spit session-file session)
+(defn- cache! [session-name session]
+  (spit (session-file-name session-name) session)
   session)
 
 (defn- make-client [region creds]
@@ -55,23 +55,20 @@
       (u/read-string-safely)
       (int)))
 
-(defn- create* [region mfa-code creds]
+(defn- create! [session-name region mfa-code creds assume-role]
   (let [client   (make-client region creds)]
     (->> (doto (AssumeRoleRequest.)
          (.withTokenCode mfa-code)
          (.withDurationSeconds (get-timeout))
          (.withSerialNumber (get-mfa-arn))
-         (.withRoleArn (get-role-arn))
-         (.withRoleSessionName "saw"))
+         (.withRoleArn (or assume-role
+                           (get-role-arn)))
+         (.withRoleSessionName session-name))
          (.assumeRole client)
          (.getCredentials)
          (as-static-creds)
          (merge {:region region})
-         (cache!))))
-
-(defn create! [region mfa-code creds]
-  (error-as-value
-    (create* region mfa-code creds)))
+         (cache! session-name))))
 
 (defn validate! [region creds]
   (error-as-value
@@ -81,10 +78,14 @@
            (.getArn))
       creds)))
 
-(defn clear! []
-  (when (.exists (io/as-file session-file))
-    (io/delete-file (io/as-file session-file))))
+(defn clear! [session-name]
+  (let [f (io/as-file (session-file-name session-name))]
+    (when (.exists f)
+      (io/delete-file f))))
 
-(defn find-or-create! [region mfa-code creds]
-  (or (find)
-      (create! region mfa-code creds)))
+(defn find-or-create! [{:keys [session-name region assume-role]}
+                       mfa-code creds]
+  (let [sess (name (or session-name :saw))]
+    (or (find session-name)
+        (error-as-value
+         (create! sess region mfa-code creds assume-role)))))

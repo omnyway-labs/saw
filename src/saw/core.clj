@@ -20,9 +20,9 @@
   ([region creds]
    (session/validate! region creds)))
 
-(defn- find-or-create-session [region mfa-code]
+(defn- find-or-create-session [{:keys [region] :as auth} mfa-code]
   (let [session (->> (provider/lookup)
-                     (session/find-or-create! region mfa-code))]
+                     (session/find-or-create! auth mfa-code))]
     (if-not (:error-id session)
       (let [creds (->> (provider/resolve session)
                        (session/validate! region))]
@@ -34,21 +34,25 @@
 (defn clear-session []
   (session/clear!))
 
-(defn maybe-use-session [{:keys [session?] :as auth}]
+(defn maybe-use-session [{:keys [session? session-name] :as auth}]
   (if (and session? (session/mfable?))
-    (if-let [session (session/find)]
+    (if-let [session (session/find session-name)]
       (provider/resolve session)
       (provider/resolve auth))
     (provider/resolve auth)))
+
+(defn mfable? [role]
+  (and (or role (session/get-role-arn))
+       (session/get-mfa-arn)))
 
 (defn login
   ([auth]
    (-> (maybe-use-session auth)
        (provider/set!)))
-  ([{:keys [region] :as auth} mfa-code]
+  ([{:keys [session-name region assume-role] :as auth} mfa-code]
    (-> (provider/resolve auth)
        (provider/set!))
-   (if (session/mfable?)
-     (find-or-create-session region mfa-code)
+   (if (mfable? assume-role)
+     (find-or-create-session auth mfa-code)
      {:error-id :env-not-configured
       :msg      "AWS_ASSUME_ROLE_ARN or AWS_MFA_ARN not set"})))

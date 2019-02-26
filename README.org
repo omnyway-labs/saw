@@ -110,6 +110,23 @@ persisted session else falls back to the given provider. This is
 useful for testing locally but still use profiles where MFA is not
 enabled.
 
+** Named Sessions
+
+When using multiple assume-roles (say with different accounts), we
+can create named sessions for each of those roles
+
+#+BEGIN_SRC clojure
+(saw/login {:provider :profile
+            :profile   :foo
+            :session-name "xyz"
+            :assume-role  "xyz-role"}
+           mfa-code)
+
+#+END_SRC
+
+This persists the session in ~/.aws/session-xyz. When no mfa-code is
+specified, it loads the session for the given name
+
 * License - Apache 2.0
 
 Copyright 2019 Omnyway Inc.
