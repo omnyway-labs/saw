@@ -48,8 +48,7 @@
 ;; expires after 8 hours
 (defn- get-timeout []
   (-> (or (System/getenv "AWS_SESSION_TIMEOUT")
-          "3600"
-          "28800")
+          "3600")
       (u/read-string-safely)
       (int)))
 

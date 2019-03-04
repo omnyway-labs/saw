@@ -42,7 +42,8 @@
   (map #(.getName %) (-> obj class .getMethods)))
 
 (defn error? [thing]
-  (and thing (:error-id thing)))
+  (or (nil? thing)
+      (:error-id thing)))
 
 (defn some-error [& xs]
   (first (filter error? xs)))
