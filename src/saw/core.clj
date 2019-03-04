@@ -40,6 +40,17 @@
          (provider/set!))
     st))
 
+(defn find-or-create! [auth mfa-code]
+  (if mfa-code
+    (->> (provider/resolve auth)
+         (session/find-or-create! auth mfa-code))
+    (session/find)))
+
+(defn resolve-session [region session]
+  (when session
+    (->> (provider/resolve session)
+         (session/validate! region))))
+
 (defn login
   ([auth]
    (-> (maybe-use-session auth)
@@ -47,14 +58,10 @@
   ([auth mfa-code role]
    (login auth mfa-code role "saw"))
   ([{:keys [region] :as auth} mfa-code role session-name]
-   (-> (provider/resolve auth)
-       (provider/set!))
    (if (mfable? role)
-     (let [session (->> (provider/resolve auth)
-                        (session/find-or-create! auth mfa-code))
-           creds   (->> (provider/resolve session)
-                        (session/validate! region))]
-       (if-not (and (:error-id session) role)
+     (let [session (find-or-create! auth mfa-code)
+           creds   (resolve-session region session)]
+       (if (and creds (not (:error-id session)))
          (assume-role! region role session-name creds)
          session))
      {:error-id :env-not-configured
