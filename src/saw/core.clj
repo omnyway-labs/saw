@@ -1,7 +1,8 @@
 (ns saw.core
   (:require
    [saw.provider :as provider]
-   [saw.session :as session]))
+   [saw.session :as session]
+   [saw.util :refer [error-as-value] :as u]))
 
 (defn creds
   ([] (provider/lookup))
@@ -40,14 +41,15 @@
          (provider/set!))
     st))
 
-(defn find-or-create! [auth mfa-code]
-  (if mfa-code
+(defn find-or-create! [{:keys [region] :as auth} mfa-code]
+  (u/error-as-value
+   (if mfa-code
     (->> (provider/resolve auth)
-         (session/find-or-create! auth mfa-code))
-    (session/find)))
+         (session/create! region mfa-code))
+    (session/find))))
 
 (defn resolve-session [region session]
-  (when session
+  (when-not (error? session)
     (->> (provider/resolve session)
          (session/validate! region))))
 
@@ -55,14 +57,14 @@
   ([auth]
    (-> (maybe-use-session auth)
        (provider/set!)))
-  ([auth mfa-code role]
-   (login auth mfa-code role "saw"))
-  ([{:keys [region] :as auth} mfa-code role session-name]
+  ([auth role session-name]
+   (login auth role session-name nil))
+  ([{:keys [region] :as auth} role session-name mfa-code]
    (if (mfable? role)
      (let [session (find-or-create! auth mfa-code)
            creds   (resolve-session region session)]
-       (if (and creds (not (:error-id session)))
+       (if-not (or (u/error? session) (u/error? creds))
          (assume-role! region role session-name creds)
-         session))
+         (some-error session creds)))
      {:error-id :env-not-configured
       :msg      "AWS_MFA_ARN not set"})))

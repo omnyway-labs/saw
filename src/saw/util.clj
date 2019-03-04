@@ -40,3 +40,9 @@
 
 (defn omethods [obj]
   (map #(.getName %) (-> obj class .getMethods)))
+
+(defn error? [thing]
+  (and thing (:error-id thing)))
+
+(defn some-error [& xs]
+  (first (filter error? xs)))

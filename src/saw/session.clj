@@ -2,8 +2,7 @@
   (:refer-clojure :exclude [find])
   (:require
    [clojure.java.io :as io]
-   [saw.util :refer [as-error error-as-value]
-    :as u])
+   [saw.util :as u])
   (:import
    [com.amazonaws.services.securitytoken
     AWSSecurityTokenService
@@ -54,7 +53,7 @@
       (u/read-string-safely)
       (int)))
 
-(defn- create [region mfa-code creds]
+(defn create! [region mfa-code creds]
   (let [client (make-client region creds)]
     (->> (doto (GetSessionTokenRequest.)
            (.withTokenCode mfa-code)
@@ -62,7 +61,8 @@
            (.withDurationSeconds (get-timeout)))
          (.getSessionToken client)
          (.getCredentials)
-         (as-static-creds))))
+         (as-static-creds)
+         (cache!))))
 
 (defn assume-role [region role session-name creds]
   (let [client (make-client region creds)]
@@ -75,25 +75,14 @@
          (as-static-creds)
          (merge {:region region}))))
 
-(defn create! [region mfa-code role creds]
-  (cache!
-   (create region mfa-code creds)))
-
 (defn validate! [region creds]
-  (error-as-value
-   (let [client (make-client region creds)]
-     (->> (GetCallerIdentityRequest.)
-          (.getCallerIdentity client)
-          (.getArn))
-     creds)))
+  (let [client (make-client region creds)]
+    (->> (GetCallerIdentityRequest.)
+         (.getCallerIdentity client)
+         (.getArn))
+    creds))
 
 (defn clear! []
   (let [f (io/as-file (session-file-name))]
     (when (.exists f)
       (io/delete-file f))))
-
-(defn find-or-create! [{:keys [region role]}
-                       mfa-code creds]
-  (or (find)
-      (error-as-value
-       (create! region mfa-code role creds))))
