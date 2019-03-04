@@ -20,19 +20,17 @@
 (defn get-mfa-arn []
   (System/getenv "AWS_MFA_ARN"))
 
-(defn session-file-name [session-name]
-  (if session-name
-    (str (System/getenv "HOME") "/.aws/session-" session-name)
-    (str (System/getenv "HOME") "/.aws/session")))
+(defn session-file-name []
+  (str (System/getenv "HOME") "/.aws/session"))
 
-(defn find [name]
-  (let [f (session-file-name name)]
+(defn find []
+  (let [f (session-file-name)]
     (when (.exists (io/as-file f))
       (-> (slurp f)
           (read-string)))))
 
-(defn- cache! [session-name session]
-  (spit (session-file-name session-name) session)
+(defn- cache! [session]
+  (spit (session-file-name) session)
   session)
 
 (defn- make-client [region creds]
@@ -49,43 +47,53 @@
    :expiration    (.getExpiration creds)})
 
 ;; expires after 8 hours
-(defn get-timeout []
+(defn- get-timeout []
   (-> (or (System/getenv "AWS_SESSION_TIMEOUT")
+          "3600"
           "28800")
       (u/read-string-safely)
       (int)))
 
-(defn- create! [session-name region mfa-code creds assume-role]
-  (let [client   (make-client region creds)]
+(defn- create [region mfa-code creds]
+  (let [client (make-client region creds)]
+    (->> (doto (GetSessionTokenRequest.)
+           (.withTokenCode mfa-code)
+           (.withSerialNumber (get-mfa-arn))
+           (.withDurationSeconds (get-timeout)))
+         (.getSessionToken client)
+         (.getCredentials)
+         (as-static-creds))))
+
+(defn assume-role [region role session-name creds]
+  (let [client (make-client region creds)]
     (->> (doto (AssumeRoleRequest.)
-         (.withTokenCode mfa-code)
-         (.withDurationSeconds (get-timeout))
-         (.withSerialNumber (get-mfa-arn))
-         (.withRoleArn (or assume-role
-                           (get-role-arn)))
-         (.withRoleSessionName session-name))
+           (.withDurationSeconds (get-timeout))
+           (.withRoleArn role)
+           (.withRoleSessionName session-name))
          (.assumeRole client)
          (.getCredentials)
          (as-static-creds)
-         (merge {:region region})
-         (cache! session-name))))
+         (merge {:region region}))))
+
+(defn create! [region mfa-code role creds]
+  (cache!
+   (create region mfa-code creds)))
 
 (defn validate! [region creds]
   (error-as-value
-    (let [client (make-client region creds)]
-      (->> (GetCallerIdentityRequest.)
-           (.getCallerIdentity client)
-           (.getArn))
-      creds)))
+   (let [client (make-client region creds)]
+     (->> (GetCallerIdentityRequest.)
+          (.getCallerIdentity client)
+          (.getArn))
+     creds)))
 
-(defn clear! [session-name]
-  (let [f (io/as-file (session-file-name session-name))]
+(defn clear! []
+  (let [f (io/as-file (session-file-name))]
     (when (.exists f)
       (io/delete-file f))))
 
-(defn find-or-create! [{:keys [session-name region assume-role]}
+(defn find-or-create! [{:keys [region role]}
                        mfa-code creds]
-  (let [sess (name (or session-name :saw))]
-    (or (find session-name)
-        (error-as-value
-         (create! sess region mfa-code creds assume-role)))))
+  (or (find)
+      (error-as-value
+       (create! region mfa-code role creds))))

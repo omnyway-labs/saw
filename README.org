@@ -64,14 +64,18 @@ A Clojure library for AWS Auth Providers
 Set the following Environment variables
 
 #+BEGIN_SRC sh
-export AWS_ASSUME_ROLE_ARN="arn:aws:iam::ACCOUNT-ID:role/ROLE-NAME"
 export AWS_MFA_ARN="arn:aws:iam::ACCOUNT-ID:mfa/<username>"
 #+END_SRC
 
 #+BEGIN_SRC clojure
+
+(saw/login provider mfa-code role session-name)
 (saw/login {:provider :profile
-            :profile (System/getenv "AWS_PROFILE")}
-           mfa-code)
+            :profile (System/getenv "AWS_PROFILE")
+            :regiion "us-east-1}
+           mfa-code
+           "arn:aws:iam::ACCOUNT-ID:role/ROLE-NAME"
+           "my-session-name")
 => {:provider :static
     :access-key "xx"
     :secret-key "xx"
@@ -80,10 +84,10 @@ export AWS_MFA_ARN="arn:aws:iam::ACCOUNT-ID:mfa/<username>"
 #+END_SRC
 
 The above returns static provider access keys with a session-token
-valid for the duration set for the Assume Role. It also persists the
-session in $HOME/.aws/session-saw file.
-When a mfa-code is provided and the above required environment
-variables, a durable session is created.
+valid for the duration set for the (Assume) Role. It also persists the
+session in $HOME/.aws/session file.
+When the mfa-code, session-name and role is provided, the same session
+can be used to assume multiple Roles.
 
 #+BEGIN_SRC clojure
 
@@ -109,23 +113,6 @@ In the above, if =:session?= is true, then login tries to use the
 persisted session else falls back to the given provider. This is
 useful for testing locally but still use profiles where MFA is not
 enabled.
-
-** Named Sessions
-
-When using multiple assume-roles (say with different accounts), we
-can create named sessions for each of those roles
-
-#+BEGIN_SRC clojure
-(saw/login {:provider :profile
-            :profile   :foo
-            :session-name "xyz"
-            :assume-role  "xyz-role"}
-           mfa-code)
-
-#+END_SRC
-
-This persists the session in ~/.aws/session-xyz. When no mfa-code is
-specified, it loads the session for the given name
 
 * License - Apache 2.0
 

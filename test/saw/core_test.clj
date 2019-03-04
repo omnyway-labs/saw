@@ -10,7 +10,8 @@
 
 (defn auth []
   {:provider :profile
-   :profile  (System/getenv "AWS_PROFILE")})
+   :profile  (System/getenv "AWS_PROFILE")
+   :region   "us-east-1"})
 
 (deftest basic-test
   (is (instance? ProfileCredentialsProvider
@@ -23,15 +24,12 @@
 
 (deftest ^:integration mfa-test
   (is (= :validation-error
-         (-> (saw/login (auth) "12345")
+         (-> (saw/login (auth) "12345" "a" "b")
              :error-id))))
 
 (deftest ^:integration mfa-test-with-assume-role
   (is (= :400
-         (-> (merge (auth)
-                    {:assume-role "my-assume-role"
-                     :session-name "foo"})
-             (saw/login "12345")
+         (-> (saw/login (auth) "12345" "assume-role" "my-session")
              :error-id))))
 
 
