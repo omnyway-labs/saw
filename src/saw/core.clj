@@ -3,9 +3,6 @@
    [saw.provider :as provider]
    [saw.session :as session]))
 
-(defn- mfa-enabled? []
-  (session/get-mfa-arn))
-
 (defn creds
   ([] (provider/lookup))
   ([auth] (provider/resolve auth)))
@@ -22,41 +19,43 @@
   ([region creds]
    (session/validate! region creds)))
 
-(defn- find-or-create-session [{:keys [region] :as auth} mfa-code]
-  (let [session (->> (provider/lookup)
-                     (session/find-or-create! auth mfa-code))]
-    (if-not (:error-id session)
-      (let [creds (->> (provider/resolve session)
-                       (session/validate! region))]
-        (if-not (:error-id creds)
-          (provider/set! creds)
-          creds))
-      session)))
 
-(defn clear-session [session-name]
-  (session/clear! session-name))
+(defn clear-session []
+  (session/clear!))
 
 (defn mfable? [role]
-  (and (or role (session/get-role-arn))
-       (session/get-mfa-arn)))
+  (and role (session/get-mfa-arn)))
 
-(defn maybe-use-session [{:keys [session? assume-role session-name]
+(defn maybe-use-session [{:keys [session? assume-role]
                           :as auth}]
   (if (and session? (mfable? assume-role))
-    (if-let [session (session/find session-name)]
+    (if-let [session (session/find)]
       (provider/resolve session)
       (provider/resolve auth))
     (provider/resolve auth)))
 
+(defn assume-role! [region role session-name creds]
+  (let [st (session/assume-role region role session-name creds)]
+    (->> (provider/resolve st)
+         (provider/set!))
+    st))
 
 (defn login
   ([auth]
    (-> (maybe-use-session auth)
        (provider/set!)))
-  ([{:keys [session-name region assume-role] :as auth} mfa-code]
+  ([auth mfa-code role]
+   (login auth mfa-code role "saw"))
+  ([{:keys [region] :as auth} mfa-code role session-name]
    (-> (provider/resolve auth)
        (provider/set!))
-   (if (mfable? assume-role)
-     (find-or-create-session auth mfa-code)
+   (if (mfable? role)
+     (let [session (->> (provider/resolve auth)
+                        (session/find-or-create! auth mfa-code))
+           creds   (->> (provider/resolve session)
+                        (session/validate! region))]
+       (if-not (and (:error-id session) role)
+         (assume-role! region role session-name creds)
+         session))
      {:error-id :env-not-configured
-      :msg      "AWS_ASSUME_ROLE_ARN or AWS_MFA_ARN not set"})))
+      :msg      "AWS_MFA_ARN not set"})))
