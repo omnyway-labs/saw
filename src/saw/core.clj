@@ -49,7 +49,7 @@
     (session/find))))
 
 (defn resolve-session [region session]
-  (when-not (error? session)
+  (when-not (u/error? session)
     (->> (provider/resolve session)
          (session/validate! region))))
 
@@ -65,6 +65,6 @@
            creds   (resolve-session region session)]
        (if-not (or (u/error? session) (u/error? creds))
          (assume-role! region role session-name creds)
-         (some-error session creds)))
+         (u/some-error session creds)))
      {:error-id :env-not-configured
       :msg      "AWS_MFA_ARN not set"})))
