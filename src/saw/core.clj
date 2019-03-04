@@ -67,4 +67,4 @@
          (assume-role! region role session-name creds)
          (u/some-error session creds)))
      {:error-id :env-not-configured
-      :msg      "AWS_MFA_ARN not set"})))
+      :msg      "AWS_MFA_ARN not set or no Role provided"})))
