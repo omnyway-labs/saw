@@ -20,7 +20,7 @@
   @current)
 
 (defn set! [creds]
-  (reset! current creds ))
+  (reset! current creds))
 
 (defn- ^AWSCredentials
   static-credentials
