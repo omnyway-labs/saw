@@ -69,13 +69,13 @@ export AWS_MFA_ARN="arn:aws:iam::ACCOUNT-ID:mfa/<username>"
 
 #+BEGIN_SRC clojure
 
-(saw/login provider mfa-code role session-name)
+(saw/login provider role session-name mfa-code)
 (saw/login {:provider :profile
             :profile (System/getenv "AWS_PROFILE")
             :regiion "us-east-1}
-           mfa-code
            "arn:aws:iam::ACCOUNT-ID:role/ROLE-NAME"
-           "my-session-name")
+           "my-session-name"
+           mfa-code)
 => {:provider :static
     :access-key "xx"
     :secret-key "xx"
