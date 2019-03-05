@@ -8,10 +8,8 @@
   ([] (provider/lookup))
   ([auth] (provider/resolve auth)))
 
-(defn session
-  ([] (session/find nil))
-  ([session-name]
-   (session/find session-name)))
+(defn session []
+  (session/find))
 
 (defn validate-session
   ([region]
@@ -19,7 +17,6 @@
         (validate-session region)))
   ([region creds]
    (session/validate! region creds)))
-
 
 (defn clear-session []
   (session/clear!))
