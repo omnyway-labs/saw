@@ -48,7 +48,7 @@
 ;; expires after 8 hours
 (defn- get-timeout []
   (-> (or (System/getenv "AWS_SESSION_TIMEOUT")
-          "3600")
+          "28800")
       (u/read-string-safely)
       (int)))
 
@@ -64,9 +64,10 @@
          (cache!))))
 
 (defn assume-role [region role session-name creds]
-  (let [client (make-client region creds)]
+  (let [client  (make-client region creds)
+        timeout (int 3600)]
     (->> (doto (AssumeRoleRequest.)
-           (.withDurationSeconds (get-timeout))
+           (.withDurationSeconds timeout)
            (.withRoleArn role)
            (.withRoleSessionName session-name))
          (.assumeRole client)
