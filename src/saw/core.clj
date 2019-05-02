@@ -49,10 +49,19 @@
     (->> (provider/resolve session)
          (session/validate! region))))
 
+(defn get-role [env]
+  (-> (slurp (str (System/getenv "HOME") "/.saw"))
+      read-string
+      :roles
+      (get env)))
+
 (defn login
   ([auth]
    (-> (maybe-use-session auth)
        (provider/set!)))
+  ([auth env]
+   (when-let [role (get-role env)]
+     (login auth role (name env))))
   ([auth role session-name]
    (login auth role session-name nil))
   ([{:keys [region] :as auth} role session-name mfa-code]
