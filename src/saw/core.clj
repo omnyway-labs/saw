@@ -1,5 +1,6 @@
 (ns saw.core
   (:require
+   [clojure.java.io :as io]
    [saw.provider :as provider]
    [saw.session :as session]
    [saw.util :refer [error-as-value] :as u]))
@@ -49,25 +50,30 @@
     (->> (provider/resolve session)
          (session/validate! region))))
 
-(defn get-role [env]
-  (-> (slurp (str (System/getenv "HOME") "/.saw"))
-      read-string
-      :roles
-      (get env)))
+(defn lookup-role [env]
+  (let [f (str (System/getenv "HOME") "/.saw")]
+    (when (.exists (io/as-file f))
+      (-> (slurp f)
+          read-string
+          (get env)))))
+
+(defn- gen-session-name []
+  (str (System/currentTimeMillis)))
 
 (defn login
   ([auth]
-   (-> (maybe-use-session auth)
-       (provider/set!)))
-  ([auth env]
-   (when-let [role (get-role env)]
-     (login auth role (name env))))
-  ([auth role session-name]
-   (login auth role session-name nil))
-  ([{:keys [region] :as auth} role session-name mfa-code]
+   (if (keyword? auth)
+     (when-let [role (lookup-role auth)]
+       (login (session) role nil))
+     (-> (maybe-use-session auth)
+         (provider/set!))))
+  ([auth role]
+   (login auth role nil))
+  ([{:keys [region] :as auth} role mfa-code]
    (error-as-value
     (let [session (find-or-create! auth mfa-code)
-          creds   (resolve-session region session)]
+          creds   (resolve-session region session)
+          session-name (gen-session-name)]
       (if-let [error (u/some-error session creds)]
         error
         (assume-role! region role session-name creds))))))
