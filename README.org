@@ -1,5 +1,5 @@
 
-A Clojure library for AWS Auth Providers
+A Clojure library for AWS Auth Providers with MFA
 
  - Takes static, env, profile and default *provider map* and returns the
    credentials that can be used in any service clientBuilder
@@ -67,7 +67,7 @@ environments (staging, perf, production etc).
 Add role per env in ~/.saw config file
 #+BEGIN_SRC clojure
 {:staging "arn:aws:iam::xxxx:role/StagingUserRole"
- :prod "arn:aws:iam::xxxx:role/StagingUserRole"}
+ :prod "arn:aws:iam::xxxx:role/ProdUserRole"}
 #+END_SRC
 And do
 
