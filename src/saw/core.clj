@@ -3,6 +3,7 @@
    [clojure.java.io :as io]
    [saw.provider :as provider]
    [saw.session :as session]
+   [saw.config :as config]
    [saw.util :refer [error-as-value] :as u]))
 
 (defn creds
@@ -51,11 +52,8 @@
          (session/validate! region))))
 
 (defn lookup-role [env]
-  (let [f (str (System/getenv "HOME") "/.saw")]
-    (when (.exists (io/as-file f))
-      (-> (slurp f)
-          read-string
-          (get env)))))
+  (-> (config/read-credentials-file)
+      (get-in [env :role_arn])))
 
 (defn- gen-session-name []
   (str (System/currentTimeMillis)))
