@@ -130,8 +130,7 @@ variable (seconds).
 
 
 Sometimes it is useful to just use the persisted session if MFA is
-enabled (the required ENV variables AWS_ASSUME_ROLE_ARN adn
-AWS_MFA_ARN are set).
+enabled
 #+BEGIN_SRC clojure
 (saw/login {:provider :profile :profile :foo :session? true})
 #+END_SRC

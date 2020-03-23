@@ -15,8 +15,9 @@
 
 (defn validate-session
   ([region]
-   (->> (session)
-        (validate-session region)))
+   (when-let [s (session)]
+     (->> (provider/resolve s)
+          (validate-session region))))
   ([region creds]
    (session/validate! region creds)))
 
