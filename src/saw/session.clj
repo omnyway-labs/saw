@@ -79,7 +79,8 @@
   (let [client (make-client region creds)]
     (->> (GetCallerIdentityRequest.)
          (.getCallerIdentity client)
-         (.getArn))))
+         (.getArn)))
+  creds)
 
 (defn clear! []
   (let [f (io/as-file (session-file-name))]
