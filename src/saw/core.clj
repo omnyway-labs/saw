@@ -6,10 +6,6 @@
    [saw.config :as config]
    [saw.util :refer [error-as-value] :as u]))
 
-(defn creds
-  ([] (provider/lookup))
-  ([auth] (provider/resolve auth)))
-
 (defn session []
   (session/find))
 
@@ -24,55 +20,44 @@
 (defn clear-session []
   (session/clear!))
 
-(defn- mfable? [role]
-  (and role (session/get-mfa-arn)))
-
-(defn- maybe-use-session [{:keys [session? assume-role]
-                          :as auth}]
-  (if (and session? (mfable? assume-role))
-    (if-let [session (session/find)]
-      (provider/resolve session)
-      (provider/resolve auth))
-    (provider/resolve auth)))
-
-(defn- assume-role! [region role session-name creds]
-  (let [st (session/assume-role region role session-name creds)]
-    (->> (provider/resolve st)
-         (provider/set!))
-    st))
-
-(defn- find-or-create! [{:keys [region] :as auth} mfa-code]
-  (if mfa-code
-    (->> (provider/resolve auth)
-         (session/create! region mfa-code))
-    (session/find)))
-
-(defn- resolve-session [region session]
-  (when-not (u/error? session)
-    (->> (provider/resolve session)
-         (session/validate! region))))
-
-(defn lookup-role [env]
+(defn- lookup-profile [profile]
   (-> (config/read-credentials-file)
-      (get-in [env :role_arn])))
+      (get profile)))
 
 (defn- gen-session-name []
   (str (System/currentTimeMillis)))
 
 (defn login
-  ([auth]
-   (if (keyword? auth)
-     (when-let [role (lookup-role auth)]
-       (login (session) role nil))
-     (-> (maybe-use-session auth)
-         (provider/set!))))
-  ([auth role]
-   (login auth role nil))
-  ([{:keys [region] :as auth} role mfa-code]
-   (error-as-value
-    (let [session (find-or-create! auth mfa-code)
-          creds   (resolve-session region session)
-          session-name (gen-session-name)]
-      (if-let [error (u/some-error session creds)]
-        error
-        (assume-role! region role session-name creds))))))
+  ([provider]
+   (-> (provider/resolve provider)
+       (provider/set!)))
+  ([provider mfa-code]
+   (if-let [role (System/getenv "AWS_MFA_ARN")]
+     (login provider mfa-code role)
+     {:error "AWS_MFA_ARN env not set"}))
+  ([{:keys [region] :as provider} mfa-code mfa-role]
+   (let [sp  (->> (provider/resolve provider)
+                  (session/create region mfa-code mfa-role))]
+     (session/cache! sp)
+     (login sp))))
+
+(defn assume
+  ([profile]
+   (let [{:keys [role_arn region]} (lookup-profile profile)
+         creds  (-> (session/find)
+                    (provider/resolve))]
+     (assume creds role_arn region)))
+  ([creds profile]
+   (let [{:keys [role_arn region]} (lookup-profile profile)]
+     (assume creds role_arn region)))
+  ([creds role-arn region]
+   (let [session-name (gen-session-name)
+         sp (session/assume-role region role-arn session-name creds)]
+     (login sp))))
+
+(defn creds
+  ([] (provider/lookup))
+  ([provider] (provider/resolve provider)))
+
+(defn static-creds [creds]
+  (session/as-static-creds creds))

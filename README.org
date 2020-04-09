@@ -1,9 +1,9 @@
-
-A Clojure library that provides
+A Clojure AWS library that provides
 
   - Authentication using various Credential Providers
-  - Authentication using https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html
   - Authentication using MFA, optionally
+  - Assume Roles https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html
+
 
 * Installation
 
@@ -15,108 +15,114 @@ A Clojure library that provides
    :sha "88102653f45f5692a337666db648083b7fa1546c"}}
 
 (require '[saw.core :as saw])
+
 #+END_SRC
 
-=saw= provides a single API function =login= that captures all form of Authentication.
+* Authentication Providers
 
-* Basic Authentication
-** Static Provider
+#+BEGIN_SRC clojure
+(saw/login provider)
+#+END_SRC
+
+Examples:
 
 #+BEGIN_SRC clojure
 (saw/login {:provider :static
+            :region "us-east-1"
             :access-key "xxx"
             :secret-key "xxx"})
-#+END_SRC
 
-** Default Provider
+(saw/login {:provider :profile
+            :profile :humans
+            :region "us-east-1"})
 
-#+BEGIN_SRC clojure
+(saw/login {:provider :env
+            :region "us-east-1"})
+
 (saw/login {:provider :default
-            :region   "us-east-1"}
+            :region "us-east-1"})
 #+END_SRC
 
-** Profile Provider
+* Provider with MFA
 
 #+BEGIN_SRC clojure
-(saw/login {:provider :profile
-            :profile (System/getenv "AWS_PROFILE")}
+(saw/login provider mfa-code mfa-role)
+
+;; or set the AWS_MFA_ARN in an env variable
+export AWS_MFA_ARN=arn:aws:iam::xxx:mfa/icy
+(saw/login provider mfa-code)
+
 #+END_SRC
 
-** Environment Provider
+When MFA is used to create a session, the same session can be used to
+assume multiple Roles. The session is persisted in =~/.aws/session= file
+
+=login= returns the CredentialsProvider object that can be used to
+create the AWS service clients. Example:
 
 #+BEGIN_SRC clojure
-(saw/login {:provider :environment}
-;; reads the aws-access-key and aws-secret-key
-#+END_SRC
 
-** Using the Credentials in Client Builders
+(import '[com.amazonaws.services.s3
+          AmazonS3ClientBuilder])
 
-#+BEGIN_SRC clojure
-(import '[com.amazonaws.services.s3 AmazonS3ClientBuilder])
-
-(let [client (-> (AmazonS3ClientBuilder/standard)
-                 (.withCredentials (saw/creds))
+(let [creds (saw/login provider)
+      client (-> (AmazonS3ClientBuilder/standard)
+                 (.withCredentials creds)
                  (.withRegion region)
-                 .build)]
-  (.method client args))
+                 .build)])
+#+END_SRC
+
+
+* Assume Role
+
+With the above CredentialsProvider object, created using with or
+without MFA, it is possible to assume a different relevant IAM role
+
+#+BEGIN_SRC clojure
+(-> (saw/login provider)
+    (saw/assume profile))
+
+;;example:
+
+(-> (saw/login {:provider :profile :profile :humans :region "us-east-1"})
+    (saw/assume profile))
 
 #+END_SRC
 
-* Authentication using AssumeRole
+where profile is an entry in =~/.aws/credentials= file
 
-There might be a need to use different roles for different
-environments (staging, perf, production etc).
+#+BEGIN_SRC conf
 
-Add role per environment or section in ~/.aws/credentials
-#+BEGIN_SRC clojure
-[staging]
-role_arn=arn:aws:iam::xxx:role/MyUserRole
+[humans]
+aws_access_key_id=xxx
+aws_secret_access_key=xxx
 region=us-east-1
-
-[prod]
-role_arn=arn:aws:iam:xxx:role/MyUserRole
+[staging]
+role_arn=arn:aws:iam::xxx:role/StagingUserRole
+region=us-east-1
+source_profile=mfa
 #+END_SRC
+
+Assume Role works with MFA too:
 
 #+BEGIN_SRC clojure
-(saw/login env-id)
-(saw/login :staging)
-
+(-> (saw/login provider mfa-code)
+    (saw/assume :my-profile))
 #+END_SRC
 
-* Authentication using MFA
-
-Set the following Environment variables
-
-#+BEGIN_SRC sh
-export AWS_MFA_ARN="arn:aws:iam::ACCOUNT-ID:mfa/<username>"
-#+END_SRC
+We can also pass in the role-arn and region without needing it to be
+in a profile in ~/.aws/credentials
 
 #+BEGIN_SRC clojure
+(-> (saw/login provider)
+    (saw/assume "arn:aws:iam::xxx:role/StagingUserRole" "us-east-1"))
 
-(saw/login provider role mfa-code)
-(saw/login {:provider :profile
-            :profile (System/getenv "AWS_PROFILE")
-            :regiion "us-east-1"}
-           "arn:aws:iam::ACCOUNT-ID:role/ROLE-NAME"
-           mfa-code)
-=> {:provider :static
-    :access-key "xx"
-    :secret-key "xx"
-    :session-token "token"
-    :expiration #inst "xxx"}
+;;=> creds
 #+END_SRC
 
-The above returns static provider access keys with a session-token
-valid for the duration set for the (Assume) Role. It also persists the
-session in $HOME/.aws/session file.
-When the mfa-code, session-name and role is provided, the same session
-can be used to assume multiple Roles.
-
-* Session
-
+* Session Utils
 
 #+BEGIN_SRC clojure
-
 ;; to lookup session
 (saw/session)
 
@@ -127,18 +133,6 @@ can be used to assume multiple Roles.
 
 The Session Timeout is configurable via the AWS_SESSION_TIMEOUT env
 variable (seconds).
-
-
-Sometimes it is useful to just use the persisted session if MFA is
-enabled
-#+BEGIN_SRC clojure
-(saw/login {:provider :profile :profile :foo :session? true})
-#+END_SRC
-
-In the above, if =:session?= is true, then login tries to use the
-persisted session else falls back to the given provider. This is
-useful for testing locally but still use profiles where MFA is not
-enabled.
 
 * License - Apache 2.0
 

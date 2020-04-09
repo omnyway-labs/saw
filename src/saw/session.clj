@@ -13,12 +13,6 @@
     GetCallerIdentityRequest
     AWSSecurityTokenServiceException]))
 
-(defn get-role-arn []
-  (System/getenv "AWS_ASSUME_ROLE_ARN"))
-
-(defn get-mfa-arn []
-  (System/getenv "AWS_MFA_ARN"))
-
 (defn session-file-name []
   (str (System/getenv "HOME") "/.aws/session"))
 
@@ -28,7 +22,7 @@
       (-> (slurp f)
           (read-string)))))
 
-(defn- cache! [session]
+(defn cache! [session]
   (spit (session-file-name) session)
   session)
 
@@ -38,8 +32,9 @@
       (.withRegion (or region "us-east-1"))
       (.build)))
 
-(defn- as-static-creds [creds]
+(defn as-static-creds [region creds]
   {:provider      :static
+   :region        region
    :access-key    (.getAccessKeyId creds)
    :secret-key    (.getSecretAccessKey creds)
    :session-token (.getSessionToken creds)
@@ -52,16 +47,15 @@
       (u/read-string-safely)
       (int)))
 
-(defn create! [region mfa-code creds]
+(defn create [region mfa-code mfa-role creds]
   (let [client (make-client region creds)]
     (->> (doto (GetSessionTokenRequest.)
            (.withTokenCode mfa-code)
-           (.withSerialNumber (get-mfa-arn))
+           (.withSerialNumber mfa-role)
            (.withDurationSeconds (get-timeout)))
          (.getSessionToken client)
          (.getCredentials)
-         (as-static-creds)
-         (cache!))))
+         (as-static-creds region))))
 
 (defn assume-role [region role session-name creds]
   (let [client  (make-client region creds)
@@ -72,8 +66,7 @@
            (.withRoleSessionName session-name))
          (.assumeRole client)
          (.getCredentials)
-         (as-static-creds)
-         (merge {:region region}))))
+         (as-static-creds region))))
 
 (defn validate! [region creds]
   (let [client (make-client region creds)]
