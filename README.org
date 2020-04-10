@@ -18,7 +18,7 @@ A Clojure AWS library that provides
 
 #+END_SRC
 
-* Authentication Providers
+* Basic Providers
 
 #+BEGIN_SRC clojure
 (saw/login provider)
@@ -57,22 +57,7 @@ export AWS_MFA_ARN=arn:aws:iam::xxx:mfa/icy
 When MFA is used to create a session, the same session can be used to
 assume multiple Roles. The session is persisted in =~/.aws/session= file
 
-=login= returns the CredentialsProvider object that can be used to
-create the AWS service clients. Example:
-
-#+BEGIN_SRC clojure
-
-(import '[com.amazonaws.services.s3
-          AmazonS3ClientBuilder])
-
-(let [creds (saw/login provider)
-      client (-> (AmazonS3ClientBuilder/standard)
-                 (.withCredentials creds)
-                 (.withRegion region)
-                 .build)])
 #+END_SRC
-
-
 * Assume Role
 
 With the above CredentialsProvider object, created using with or
@@ -119,6 +104,34 @@ in a profile in ~/.aws/credentials
 
 ;;=> creds
 #+END_SRC
+
+* using with an AWS service client
+
+=login= returns the CredentialsProvider object that can be used to
+create the AWS service clients. Example:
+
+#+BEGIN_SRC clojure
+
+(import '[com.amazonaws.services.s3
+          AmazonS3ClientBuilder])
+
+(let [creds (saw/login provider)
+      client (-> (AmazonS3ClientBuilder/standard)
+                 (.withCredentials creds)
+                 (.withRegion (saw/region))
+                 .build)])
+
+;; or when using assume
+
+(let [creds (-> (saw/login provider) (saw/assume profile)]
+      (-> (AmazonS3ClientBuilder/standard)
+          (.withCredentials (saw/creds))
+          (.withRegion (saw/region))
+          .build)
+
+#+END_SRC
+
+=(saw/region)= returns the current region set during =login= or =assume=
 
 * Session Utils
 
