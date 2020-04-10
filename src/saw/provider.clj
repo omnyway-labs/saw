@@ -1,7 +1,7 @@
 (ns saw.provider
   (:refer-clojure :exclude [resolve])
   (:require
-   [saw.session :as session])
+   [saw.config :as config])
   (:import
    [com.amazonaws.auth
     AWSCredentials
@@ -14,13 +14,12 @@
     DefaultAWSCredentialsProviderChain]
    [com.amazonaws.auth.profile ProfileCredentialsProvider]))
 
-(def ^:private current (atom nil))
+(defonce ^:private current (atom nil))
+
+(defonce ^:private current-region (atom nil))
 
 (defn lookup []
   @current)
-
-(defn set! [creds]
-  (reset! current creds))
 
 (defn- ^AWSCredentials
   static-credentials
@@ -52,3 +51,22 @@
       (instance? EnvironmentVariableCredentialsProvider thing)
       (instance? AWSStaticCredentialsProvider thing)
       (instance? DefaultAWSCredentialsProviderChain thing)))
+
+(defn lookup-profile [profile]
+  (-> (config/read-credentials-file)
+      (get profile)))
+
+(defn- lookup-region [{:keys [provider profile auth-type region]}]
+  (if (or (= provider :profile)
+          (= auth-type :auth-type))
+    (:region (lookup-profile profile))
+    region))
+
+(defn set! [creds]
+  (reset! current creds))
+
+(defn set-region! [region]
+  (reset! current-region region))
+
+(defn get-region []
+  @current-region)
