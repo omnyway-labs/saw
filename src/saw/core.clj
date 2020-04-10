@@ -26,7 +26,8 @@
    (if (provider/creds? provider)
      provider
      (do
-       (provider/set-region! (:region provider))
+       (-> (provider/lookup-region provider)
+           (provider/set-region!))
        (-> (provider/resolve provider)
            (provider/set!)))))
   ([provider mfa-code]

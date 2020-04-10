@@ -56,16 +56,17 @@
   (-> (config/read-credentials-file)
       (get profile)))
 
-(defn- lookup-region [{:keys [provider profile auth-type region]}]
+(defn lookup-region [{:keys [provider profile auth-type region]}]
   (if (or (= provider :profile)
-          (= auth-type :auth-type))
+          (= auth-type :profile))
     (:region (lookup-profile profile))
-    region))
+    (or region (System/getenv "AWS_REGION"))))
 
 (defn set! [creds]
   (reset! current creds))
 
 (defn set-region! [region]
+  (prn region)
   (reset! current-region region))
 
 (defn get-region []
