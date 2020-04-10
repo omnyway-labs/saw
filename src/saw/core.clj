@@ -29,8 +29,10 @@
 
 (defn login
   ([provider]
-   (-> (provider/resolve provider)
-       (provider/set!)))
+   (if (provider/creds? provider)
+     provider
+     (-> (provider/resolve provider)
+         (provider/set!))))
   ([provider mfa-code]
    (if-let [role (System/getenv "AWS_MFA_ARN")]
      (login provider mfa-code role)

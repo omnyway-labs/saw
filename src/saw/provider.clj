@@ -45,3 +45,10 @@
     :env      (EnvironmentVariableCredentialsProvider.)
     :static   (AWSStaticCredentialsProvider. (static-credentials config))
     :default  (DefaultAWSCredentialsProviderChain.)))
+
+(defn creds? [thing]
+  (or (instance? InstanceProfileCredentialsProvider thing)
+      (instance? ProfileCredentialsProvider thing)
+      (instance? EnvironmentVariableCredentialsProvider thing)
+      (instance? AWSStaticCredentialsProvider thing)
+      (instance? DefaultAWSCredentialsProviderChain thing)))
