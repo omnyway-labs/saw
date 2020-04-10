@@ -37,14 +37,6 @@
    :env      EnvironmentVariableCredentialsProvider
    :default  DefaultAWSCredentialsProviderChain})
 
-(defn resolve [{:keys [provider auth-type profile] :as config}]
-  (condp = (or auth-type provider)
-    :instance (InstanceProfileCredentialsProvider. false)
-    :profile  (ProfileCredentialsProvider. (name profile))
-    :env      (EnvironmentVariableCredentialsProvider.)
-    :static   (AWSStaticCredentialsProvider. (static-credentials config))
-    :default  (DefaultAWSCredentialsProviderChain.)))
-
 (defn creds? [thing]
   (or (instance? InstanceProfileCredentialsProvider thing)
       (instance? ProfileCredentialsProvider thing)
@@ -66,8 +58,33 @@
   (reset! current creds))
 
 (defn set-region! [region]
-  (prn region)
   (reset! current-region region))
 
 (defn get-region []
   @current-region)
+
+(defn resolve [{:keys [provider auth-type profile] :as config}]
+  (condp = (or auth-type provider)
+    :instance (InstanceProfileCredentialsProvider. false)
+    :profile  (ProfileCredentialsProvider. (name profile))
+    :env      (EnvironmentVariableCredentialsProvider.)
+    :static   (AWSStaticCredentialsProvider. (static-credentials config))
+    :default  (DefaultAWSCredentialsProviderChain.)))
+
+(defn resolve! [config]
+  (cond
+    (map? config)
+    (let [region (lookup-region config)]
+      (set-region! region)
+      (resolve config))
+
+    (keyword? config)
+    (let [{:keys [region]} (lookup-profile config)]
+      (set-region! region)
+      (resolve {:provider :profile
+                :profile  config
+                :region   region}))
+
+    (creds? config)
+    config
+    :else :unsupported-provider))

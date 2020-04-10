@@ -23,19 +23,14 @@
 
 (defn login
   ([provider]
-   (if (provider/creds? provider)
-     provider
-     (do
-       (-> (provider/lookup-region provider)
-           (provider/set-region!))
-       (-> (provider/resolve provider)
-           (provider/set!)))))
+   (-> (provider/resolve! provider)
+       (provider/set!)))
   ([provider mfa-code]
    (if-let [role (System/getenv "AWS_MFA_ARN")]
      (login provider mfa-code role)
      {:error "AWS_MFA_ARN env not set"}))
   ([{:keys [region] :as provider} mfa-code mfa-role]
-   (let [sp  (->> (provider/resolve provider)
+   (let [sp  (->> (provider/resolve! provider)
                   (session/create region mfa-code mfa-role))]
      (provider/set-region! region)
      (session/cache! sp)
@@ -45,7 +40,7 @@
   ([profile]
    (let [{:keys [role_arn region]} (provider/lookup-profile profile)
          creds  (-> (session/find)
-                    (provider/resolve))]
+                    (provider/resolve!))]
      (assume creds role_arn region)))
   ([creds profile]
    (let [{:keys [role_arn region]} (provider/lookup-profile profile)]
@@ -58,7 +53,7 @@
 
 (defn creds
   ([] (provider/lookup))
-  ([provider] (provider/resolve provider)))
+  ([provider] (provider/resolve! provider)))
 
 (defn static-creds [creds]
   (session/as-static-creds creds))
