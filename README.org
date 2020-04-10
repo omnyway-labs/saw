@@ -105,7 +105,7 @@ in a profile in ~/.aws/credentials
 ;;=> creds
 #+END_SRC
 
-* using with an AWS service client
+* Using with an AWS service client
 
 =login= returns the CredentialsProvider object that can be used to
 create the AWS service clients. Example:
@@ -125,11 +125,13 @@ create the AWS service clients. Example:
 
 (let [creds (-> (saw/login provider) (saw/assume profile)]
       (-> (AmazonS3ClientBuilder/standard)
-          (.withCredentials (saw/creds))
+          (.withCredentials creds)
           (.withRegion (saw/region))
           .build)
 
 #+END_SRC
+
+=(.withCredentials (saw/creds))= works too.
 
 =(saw/region)= returns the current region set during =login= or =assume=
 
