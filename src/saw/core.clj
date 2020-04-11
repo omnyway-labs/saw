@@ -23,10 +23,13 @@
 
 (defn login
   ([provider]
-   (-> (p/lookup-region provider)
-       (p/set-region!))
-   (-> (p/resolve provider)
-       (p/set!)))
+   (if (p/creds? provider)
+     provider
+     (let [region (p/lookup-region provider)]
+       (p/set-region! region)
+       (-> (p/as-provider provider)
+           (p/resolve)
+           (p/set!)))))
 
   ([provider mfa-code]
    (when-let [role (System/getenv "AWS_MFA_ARN")]
