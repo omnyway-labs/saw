@@ -9,10 +9,10 @@
 (defn session [] (session/find))
 
 (defn validate-session
-  ([region]
+  ([]
    (when-let [s (session)]
      (->> (provider/resolve s)
-          (validate-session region))))
+          (validate-session (:region s)))))
   ([region creds]
    (session/validate! region creds)))
 
