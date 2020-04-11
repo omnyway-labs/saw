@@ -4,10 +4,13 @@
    [clojure.java.io :as io]
    [saw.util :as u])
   (:import
+   [com.amazonaws.auth
+    AWSStaticCredentialsProvider]
    [com.amazonaws.services.securitytoken
     AWSSecurityTokenService
     AWSSecurityTokenServiceClientBuilder]
    [com.amazonaws.services.securitytoken.model
+    Credentials
     GetSessionTokenRequest
     AssumeRoleRequest
     GetCallerIdentityRequest
@@ -29,16 +32,27 @@
 (defn- make-client [region creds]
   (-> (AWSSecurityTokenServiceClientBuilder/standard)
       (.withCredentials creds)
-      (.withRegion (or region "us-east-1"))
+      (.withRegion region)
       (.build)))
 
 (defn as-static-creds [region creds]
-  {:provider      :static
-   :region        region
-   :access-key    (.getAccessKeyId creds)
-   :secret-key    (.getSecretAccessKey creds)
-   :session-token (.getSessionToken creds)
-   :expiration    (.getExpiration creds)})
+  (cond
+    (instance? Credentials creds)
+    {:provider      :static
+     :region        region
+     :access-key    (.getAccessKeyId creds)
+     :secret-key    (.getSecretAccessKey creds)
+     :session-token (.getSessionToken creds)
+     :expiration    (.getExpiration creds)}
+
+    (instance? AWSStaticCredentialsProvider creds)
+    (let [c (.getCredentials creds)]
+      {:provider      :static
+       :region        region
+       :access-key    (.getAWSAccessKeyId c)
+       :secret-key    (.getAWSSecretKey c)
+       :session-token (.getSessionToken c)})
+    :else nil))
 
 ;; expires after 8 hours
 (defn- get-timeout []
