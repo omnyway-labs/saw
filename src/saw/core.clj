@@ -1,17 +1,17 @@
 (ns saw.core
   (:require
    [clojure.java.io :as io]
-   [saw.provider :as provider]
+   [saw.provider :as p]
    [saw.session :as session]))
 
-(defn region [] (provider/get-region))
+(defn region [] (p/get-region))
 
 (defn session [] (session/find))
 
 (defn validate-session
   ([]
    (when-let [s (session)]
-     (->> (provider/resolve s)
+     (->> (p/resolve s)
           (validate-session (:region s)))))
   ([region creds]
    (session/validate! region creds)))
@@ -23,37 +23,44 @@
 
 (defn login
   ([provider]
-   (-> (provider/resolve! provider)
-       (provider/set!)))
+   (-> (p/lookup-region provider)
+       (p/set-region!))
+   (-> (p/resolve provider)
+       (p/set!)))
+
   ([provider mfa-code]
-   (if-let [role (System/getenv "AWS_MFA_ARN")]
-     (login provider mfa-code role)
-     {:error "AWS_MFA_ARN env not set"}))
+   (when-let [role (System/getenv "AWS_MFA_ARN")]
+     (login provider mfa-code role)))
+
   ([{:keys [region] :as provider} mfa-code mfa-role]
-   (let [sp  (->> (provider/resolve! provider)
-                  (session/create region mfa-code mfa-role))]
-     (provider/set-region! region)
-     (session/cache! sp)
-     (login sp))))
+   (let [region (p/lookup-region provider)]
+     (p/set-region! region)
+     (->> (p/as-provider provider)
+          (p/resolve)
+          (session/create region mfa-code mfa-role)
+          (session/cache!)
+          (p/resolve)
+          (p/set!)))))
 
 (defn assume
   ([profile]
-   (let [{:keys [role_arn region]} (provider/lookup-profile profile)
+   (let [{:keys [role_arn region]} (p/lookup-profile profile)
          creds  (-> (session/find)
-                    (provider/resolve!))]
+                    (p/resolve))]
      (assume creds role_arn region)))
+
   ([creds profile]
-   (let [{:keys [role_arn region]} (provider/lookup-profile profile)]
+   (let [{:keys [role_arn region]} (p/lookup-profile profile)]
      (assume creds role_arn region)))
+
   ([creds role-arn region]
-   (provider/set-region! region)
    (let [session-name (gen-session-name)
          sp (session/assume-role region role-arn session-name creds)]
      (login sp))))
 
 (defn creds
-  ([] (provider/lookup))
-  ([provider] (provider/resolve! provider)))
+  ([] (p/lookup))
+  ([provider] (p/resolve provider)))
 
 (defn static-creds [creds]
   (session/as-static-creds (region) creds))

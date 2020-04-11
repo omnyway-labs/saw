@@ -71,20 +71,18 @@
     :static   (AWSStaticCredentialsProvider. (static-credentials config))
     :default  (DefaultAWSCredentialsProviderChain.)))
 
-(defn resolve! [config]
+(defn as-provider [config]
   (cond
     (map? config)
     (let [region (lookup-region config)]
-      (set-region! region)
-      (resolve config))
+      (assoc config :region region))
 
     (keyword? config)
     (let [{:keys [region]} (lookup-profile config)]
-      (set-region! region)
       (resolve {:provider :profile
                 :profile  config
                 :region   region}))
 
     (creds? config)
     config
-    :else :unsupported-provider))
+    :else nil))
