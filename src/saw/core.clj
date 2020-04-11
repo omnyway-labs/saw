@@ -56,4 +56,4 @@
   ([provider] (provider/resolve! provider)))
 
 (defn static-creds [creds]
-  (session/as-static-creds creds))
+  (session/as-static-creds (region) creds))
