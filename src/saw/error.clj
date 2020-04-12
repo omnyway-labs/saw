@@ -30,7 +30,7 @@
       (ex-info (get errors id)
                (assoc info
                       :error  id
-                      :message (get errors id)
+                      :message (get errors id "undefined error")
                       :type :saw-error
                       :expr expr)
                cause)))))
@@ -52,7 +52,7 @@
     ~@body
     (catch Exception e#
       (throw
-       (ex-info (get errors ~id)
+       (ex-info (get errors ~id (.getMessage e#))
                 (merge (ex-data e#)
                        {:error  ~id
                         :message (.getMessage e#)
