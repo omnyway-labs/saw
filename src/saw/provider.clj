@@ -1,7 +1,8 @@
 (ns saw.provider
   (:refer-clojure :exclude [resolve])
   (:require
-   [saw.config :as config])
+   [saw.config :as config]
+   [saw.error :refer [assert!]])
   (:import
    [com.amazonaws.auth
     AWSCredentials
@@ -35,6 +36,7 @@
   {:instance InstanceProfileCredentialsProvider
    :profile  ProfileCredentialsProvider
    :env      EnvironmentVariableCredentialsProvider
+   :static   AWSStaticCredentialsProvider
    :default  DefaultAWSCredentialsProviderChain})
 
 (defn creds? [thing]
@@ -45,8 +47,10 @@
       (instance? DefaultAWSCredentialsProviderChain thing)))
 
 (defn lookup-profile [profile]
-  (-> (config/read-credentials-file)
-      (get profile)))
+  (assert!
+   (-> (config/read-credentials-file)
+       (get profile))
+   :profile-not-found {:profile profile}))
 
 (defn lookup-region [{:keys [provider profile auth-type region]}]
   (if (or (= provider :profile)
@@ -69,13 +73,16 @@
     :profile  (ProfileCredentialsProvider. (name profile))
     :env      (EnvironmentVariableCredentialsProvider.)
     :static   (AWSStaticCredentialsProvider. (static-credentials config))
-    :default  (DefaultAWSCredentialsProviderChain.)))
+    :default  (DefaultAWSCredentialsProviderChain.)
+    nil))
 
 (defn as-provider [config]
   (cond
     (map? config)
-    (let [region (lookup-region config)]
-      (assoc config :region region))
+    (when (contains? (set (keys providers)) (:provider config))
+      (let [region (lookup-region config)]
+        (assoc config :region region)))
+
 
     (keyword? config)
     (let [{:keys [region]} (lookup-profile config)]
