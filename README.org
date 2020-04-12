@@ -12,8 +12,8 @@ A Clojure AWS library that provides
 {:deps
  {omnyway-labs/saw
   {:git/url "https://github.com/omnyway-labs/saw.git"
-   :sha "3d0c7a77367185817fe02fae287366e616802205"
-   :tag "0.2.1"}}
+   :sha "c2bf3c04756968685adfc0a577c88f4b5f56446d"
+   :tag "0.2.9"}}
 
 (require '[saw.core :as saw])
 
@@ -135,6 +135,37 @@ create the AWS service clients. Example:
 =(.withCredentials (saw/creds))= works too.
 
 =(saw/region)= returns the current region set during =login= or =assume=
+
+* Errors
+
+=ex-data= throws error in the format
+
+#+BEGIN_SRC clojure
+(ex-data *e)
+
+{:error error-id :message error-message :type :saw-error :cause cause}
+#+END_SRC
+
+Following are some known error-ids:
+
+#+BEGIN_SRC clojure
+(:assume-role-failed
+ :invalid-creds-object
+ :mfa-code-not-string
+ :profile-not-found
+ :provider-not-resolved
+ :provider-not-supported
+ :region-not-found
+ :region-not-found-in-profile
+ :role-arn-not-found
+ :role-arn-not-found-in-profile
+ :session-cache-failed
+ :session-create-failed
+ :session-empty-cache-failed
+ :session-lookup-failed
+ :session-not-found
+ :session-validaton-failed)
+#+END_SRC
 
 * Session Utils
 
