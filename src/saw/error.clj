@@ -3,7 +3,7 @@
 (def errors
   {:role-arn-not-found-in-profile "No role_arn found for profile in credentials file"
    :region-not-found-in-profile   "No region found for profile in credentials file"
-   :session-not-found             "Cannot assume role beacuse no Session not found"
+   :session-not-found             "No session found to assume role. Try login again"
    :role-arn-not-found            "AWS_MFA_ARN not set"
    :region-not-found              "Region not found in env or profile"
    :provider-not-resolved         "Cannot resolve Provider"
