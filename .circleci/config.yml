@@ -4,7 +4,7 @@ jobs:
     parallelism: 1
     working_directory: ~/saw
     docker:
-      - image: omnyway/vulcan:0.1.4
+      - image: omnyway/vulcan:latest
     environment:
       - SERVICE_NAME: saw
     steps:
