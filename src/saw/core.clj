@@ -47,10 +47,10 @@
 
 (defn assume
   ([profile]
-   (let [{:keys [role_arn region]} (p/lookup-profile profile)
-         creds  (-> (session/find)
-                    (p/resolve))]
-     (assume creds role_arn region)))
+   (let [{:keys [role_arn region]} (p/lookup-profile profile)]
+     (when-let [session (session/find)]
+       (-> (p/resolve session)
+           (assume role_arn region)))))
 
   ([creds profile]
    (let [{:keys [role_arn region]} (p/lookup-profile profile)]
