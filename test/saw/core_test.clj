@@ -11,12 +11,13 @@
 
 
 (def provider {:provider :profile
-               :profile  (System/getenv "AWS_PROFILE")
+               :profile  nil
                :region   "us-east-1"})
 
-(deftest basic-test
-  (is (instance? ProfileCredentialsProvider
-                 (saw/creds provider))))
+(deftest empty-profile-test
+  (is (= :profile-not-found
+         (err
+          (saw/login provider "12345")))))
 
 (deftest profile-not-found-test
   (is (= :profile-not-found
@@ -24,7 +25,7 @@
           (saw/login (assoc provider :profile :bad) "12345")))))
 
 (deftest sesssion-create-test
-  (is (= :session-create-failed
+  (is (contains? #{:session-create-failed :profile-not-found}
          (err
           (saw/login (assoc provider :profile :default) "12345")))))
 

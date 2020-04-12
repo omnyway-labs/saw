@@ -7,6 +7,7 @@
    :role-arn-not-found            "AWS_MFA_ARN not set"
    :region-not-found              "Region not found in env or profile"
    :provider-not-resolved         "Cannot resolve Provider"
+   :empty-profile                 "Profile not specified"
    :profile-not-found             "Profile not found"
    :invalid-creds-object          "Creds is not an instance of any CredentialsProvider. Try login first"
    :assume-role-failed            "Assume Role failed"
