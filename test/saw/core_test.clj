@@ -15,21 +15,24 @@
                :region   "us-east-1"})
 
 (deftest empty-profile-test
-  (is (= :profile-not-found
+  (is (contains? #{:profile-not-found :role-arn-not-found}
          (err
           (saw/login provider "12345")))))
 
 (deftest profile-not-found-test
-  (is (= :profile-not-found
+  (is (contains? #{:profile-not-found :role-arn-not-found}
          (err
           (saw/login (assoc provider :profile :bad) "12345")))))
 
 (deftest sesssion-create-test
-  (is (contains? #{:session-create-failed :profile-not-found}
+  (is (contains? #{:session-create-failed
+                   :profile-not-found
+                   :role-arn-not-found}
          (err
           (saw/login (assoc provider :profile :default) "12345")))))
 
 (deftest provider-not-supported-test
-  (is (= :provider-not-supported
+  (is (contains? #{:provider-not-supported
+                   :role-arn-not-found}
          (err
           (saw/login {} "12345")))))
