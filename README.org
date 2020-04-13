@@ -48,11 +48,13 @@ Examples:
             :secret-key "xxx"})
 
 (saw/login {:provider :profile
-            :profile :humans
+            :profile :default
             :region "us-east-1"})
 
 (saw/login {:provider :env
             :region "us-east-1"})
+;; make sure the env vars AWS_ACCESS_KEY and AWS_SECRET_KEY_ID
+;; are set when using env provider
 
 (saw/login {:provider :default
             :region "us-east-1"})
@@ -85,7 +87,7 @@ without MFA, it is possible to assume a different relevant IAM role
 
 ;;example:
 
-(-> (saw/login {:provider :profile :profile :humans :region "us-east-1"})
+(-> (saw/login {:provider :profile :profile :default :region "us-east-1"})
     (saw/assume profile))
 
 #+END_SRC
@@ -94,12 +96,16 @@ where profile is an entry in =~/.aws/credentials= file
 
 #+BEGIN_SRC conf
 
-[humans]
+[default]
 aws_access_key_id=xxx
 aws_secret_access_key=xxx
 region=us-east-1
 [staging]
 role_arn=arn:aws:iam::xxx:role/StagingUserRole
+region=us-east-1
+source_profile=mfa
+[prod]
+role_arn=arn:aws:iam::xxx:role/ProdUserRole
 region=us-east-1
 source_profile=mfa
 #+END_SRC
@@ -108,7 +114,11 @@ Assume Role works with MFA too:
 
 #+BEGIN_SRC clojure
 (-> (saw/login provider mfa-code)
-    (saw/assume :my-profile))
+    (saw/assume :staging))
+
+;; or just assume after a login
+(saw/assume :staging)
+(saw/assume :production)
 #+END_SRC
 
 We can also pass in the role-arn and region without needing it to be
