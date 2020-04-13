@@ -4,22 +4,36 @@ A Clojure AWS library that provides
   - Authentication using MFA, optionally
   - Assume Roles https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html
 
-
 * Installation
 
 #+BEGIN_SRC clojure
 
-{:deps
- {omnyway-labs/saw
-  {:git/url "https://github.com/omnyway-labs/saw.git"
-   :sha "3cf1c1ded6f1d1661d324a6d9e4340c8e91d57a5"
-   :tag "0.2.12"}}
+;; Add below to deps.edn
 
-(require '[saw.core :as saw])
+{omnyway-labs/saw
+  {:git/url "https://github.com/omnyway-labs/saw.git"
+   :sha "3ac408b6c7f7574c3280d99959a3b542ecc4d7f2"
+   :tag "0.2.13"}
+
+;; or
+{:saw {:mvn/version "0.2.13"}}
 
 #+END_SRC
 
-* Basic Providers
+#+BEGIN_SRC clojure
+(require '[saw.core :as saw])
+
+;; use any of the following
+(saw/login provider)
+(saw/login provider mfa-code)
+(saw/login provider mfa-code mfa-role)
+#+END_SRC
+
+See following examples for usage
+
+* Usage
+
+** Basic Providers
 
 #+BEGIN_SRC clojure
 (saw/login provider)
@@ -44,7 +58,7 @@ Examples:
             :region "us-east-1"})
 #+END_SRC
 
-* Provider with MFA
+** Provider with MFA
 
 #+BEGIN_SRC clojure
 (saw/login provider mfa-code mfa-role)
@@ -59,7 +73,8 @@ When MFA is used to create a session, the same session can be used to
 assume multiple Roles. The session is persisted in =~/.aws/session= file
 
 #+END_SRC
-* Assume Role
+
+** Assume Role
 
 With the above CredentialsProvider object, created using with or
 without MFA, it is possible to assume a different relevant IAM role
@@ -106,7 +121,7 @@ in a profile in ~/.aws/credentials
 ;;=> creds
 #+END_SRC
 
-* Using with an AWS service client
+** Using with an AWS service client
 
 =login= returns the CredentialsProvider object that can be used to
 create the AWS service clients. Example:
@@ -136,7 +151,7 @@ create the AWS service clients. Example:
 
 =(saw/region)= returns the current region set during =login= or =assume=
 
-* Errors
+** Errors
 
 =ex-data= throws error in the format
 
@@ -167,7 +182,7 @@ Following are some known error-ids:
  :session-validaton-failed)
 #+END_SRC
 
-* Session Utils
+** Session Utils
 
 #+BEGIN_SRC clojure
 ;; to lookup session
