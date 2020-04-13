@@ -12,8 +12,8 @@ A Clojure AWS library that provides
 {:deps
  {omnyway-labs/saw
   {:git/url "https://github.com/omnyway-labs/saw.git"
-   :sha "c2bf3c04756968685adfc0a577c88f4b5f56446d"
-   :tag "0.2.9"}}
+   :sha "3cf1c1ded6f1d1661d324a6d9e4340c8e91d57a5"
+   :tag "0.2.12"}}
 
 (require '[saw.core :as saw])
 
