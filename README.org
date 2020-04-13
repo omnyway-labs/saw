@@ -16,7 +16,7 @@ A Clojure AWS library that provides
    :tag "0.2.13"}
 
 ;; or
-{:saw {:mvn/version "0.2.13"}}
+{saw {:mvn/version "0.2.13"}}
 
 #+END_SRC
 
