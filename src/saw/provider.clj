@@ -79,10 +79,10 @@
 (defn as-provider [config]
   (cond
     (map? config)
-    (when (contains? (set (keys providers)) (:provider config))
-      (let [region (lookup-region config)]
-        (assoc config :region region)))
-
+    (let [provider (or (:provider config) (:auth-type config))]
+      (when (contains? (set (keys providers)) provider)
+        (let [region (lookup-region config)]
+          (assoc config :region region))))
 
     (keyword? config)
     (let [{:keys [region]} (lookup-profile config)]
