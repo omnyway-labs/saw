@@ -5,15 +5,15 @@
 
 (defn- parse-line [s kw trim]
   (if (= (first s) \[)
-    (-> s (subs 1 (.indexOf s "]")) trim kw)
-    (let [n (.indexOf s "=")]
+    (-> s (subs 1 (s/index-of s "]")) trim kw)
+    (let [n (s/index-of s "=")]
       (if (neg? n)
         (throw (Exception. (str "Could not parse: " s)))
         [(-> s (subs 0 n) trim kw)
          (-> s (subs (inc n)) trim)]))))
 
 (defn- strip-comment [s chr allow-anywhere?]
-  (let [n (.indexOf s (int chr))]
+  (let [n -1] ;; FIXME: Fix other comments
     (if (and (not (neg? n))
              (or allow-anywhere?
                  (zero? n)))
@@ -63,7 +63,7 @@
     (with-open [r (io/reader in)]
       (->> (line-seq r)
            (map #(strip-comment % comment-char allow-comments-anywhere?))
-           (remove (fn [s] (every? #(Character/isWhitespace %) s)))
+           (remove s/blank?)
            (map #(parse-line % kw trim))
            mapify))))
 
