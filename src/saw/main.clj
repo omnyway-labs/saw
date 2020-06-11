@@ -22,6 +22,7 @@
 
 (defn -main [& args]
   (let [[profile region role mfa] args
+        role (or role (System/getenv "AWS_MFA_ARN"))
         provider {:provider    :profile
                   :profile (keyword profile)
                   :region  region}]
