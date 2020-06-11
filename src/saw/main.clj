@@ -21,9 +21,8 @@
        (saw/validate-session region)))
 
 (defn -main [& args]
-  (let [[profile region role mfa] args
-        role (or (not (empty? role))
-                 (System/getenv "AWS_MFA_ARN"))
+  (let [[profile region mfa] args
+        role (System/getenv "AWS_MFA_ARN")
         provider {:provider    :profile
                   :profile (keyword profile)
                   :region  region}]
