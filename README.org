@@ -33,37 +33,59 @@ See following examples for usage
 
 * Usage
 
-** Basic Providers
+** Basic Login with just Credential Providers
+/Credential Providers/ specify how to get the AWS credentials to enable access to AWS CLI or SDK resources
 
+*Note that /Credential Providers/ are a map of key/value pairs.*.
+Examples below may show it as ~provider~ but its always going to be a ~map~ and have at lease one key-pair
+
+Basic Generic form without MFA:
 #+BEGIN_SRC clojure
 (saw/login provider)
 #+END_SRC
 
-Examples:
-
+*** ~:static~
+Expects explicit access-key and secret-key for credentials
 #+BEGIN_SRC clojure
 (saw/login {:provider :static
             :region "us-east-1"
             :access-key "xxx"
             :secret-key "xxx"})
+#+END_SRC
 
+*** ~:profile~
+Expects a profile that matches in ~~/.aws/credentials~ and uses those to login.
+
+*Note that this profile should be one with actual credentials, not an STS Assume Role credential.*
+
+#+BEGIN_SRC clojure
 (saw/login {:provider :profile
             :profile :default
             :region "us-east-1"})
-
+#+END_SRC
+*** ~:env~
+Will get the explicit credentials from environment variables.
+Make sure the env vars ~AWS_ACCESS_KEY~ and ~AWS_SECRET_KEY_ID~ are set when using ~:env~
+#+BEGIN_SRC clojure
 (saw/login {:provider :env
             :region "us-east-1"})
-;; make sure the env vars AWS_ACCESS_KEY and AWS_SECRET_KEY_ID
-;; are set when using env provider
+#+END_SRC
+*** :default
+*TODO: what is this?*
 
+#+BEGIN_SRC clojure
 (saw/login {:provider :default
             :region "us-east-1"})
 #+END_SRC
 
-** Provider with MFA
+** Login with Credential Provider and MFA
+
+There are two optional arguments that /are not part of the map and are not a map themselves/
+- mfa-code: The One Time Password code from your authenticator
+- mfa-arn: The AWS ARN of your authenticator
 
 #+BEGIN_SRC clojure
-(saw/login provider mfa-code mfa-role)
+(saw/login provider mfa-code mfa-arn)
 
 ;; or set the AWS_MFA_ARN in an env variable
 export AWS_MFA_ARN=arn:aws:iam::xxx:mfa/icy
@@ -74,11 +96,14 @@ export AWS_MFA_ARN=arn:aws:iam::xxx:mfa/icy
 When MFA is used to create a session, the same session can be used to
 assume multiple Roles. The session is persisted in =~/.aws/session= file
 
+*** Full example of an incline login with a profile provider and an MFA code/arn:
+#+BEGIN_SRC clojure
+(saw/login {:provider :profile :profile :production :region "us-east-1"} "096297" "arn:aws:iam::9536952499298:mfa/george")
 #+END_SRC
 
 ** Assume Role
 
-With the above CredentialsProvider object, created using with or
+With the above Login CredentialsProvider object, created using with or
 without MFA, it is possible to assume a different relevant IAM role
 
 #+BEGIN_SRC clojure
@@ -103,11 +128,11 @@ region=us-east-1
 [staging]
 role_arn=arn:aws:iam::xxx:role/StagingUserRole
 region=us-east-1
-source_profile=mfa
+source_profile=default
 [prod]
 role_arn=arn:aws:iam::xxx:role/ProdUserRole
 region=us-east-1
-source_profile=mfa
+source_profile=default
 #+END_SRC
 
 Assume Role works with MFA too:
